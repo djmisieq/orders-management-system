@@ -15,7 +15,7 @@ namespace OrdersManagement.Backend.Data
         public DbSet<OrderComment> OrderComments { get; set; }
         public DbSet<OrderHistory> OrderHistory { get; set; }
         
-        // Production scheduling
+        // Production scheduling and resource management
         public DbSet<Resource> Resources { get; set; }
         public DbSet<ProductionTask> ProductionTasks { get; set; }
         public DbSet<TaskResourceAssignment> TaskResourceAssignments { get; set; }
@@ -45,23 +45,25 @@ namespace OrdersManagement.Backend.Data
                 .HasForeignKey(h => h.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
                 
-            // Production Tasks configuration
+            // Order to ProductionTasks configuration
             modelBuilder.Entity<Order>()
                 .HasMany<ProductionTask>()
                 .WithOne(t => t.Order)
                 .HasForeignKey(t => t.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
                 
-            // Task-Resource many-to-many relationship
+            // Many-to-many relationship between ProductionTask and Resource
             modelBuilder.Entity<TaskResourceAssignment>()
                 .HasOne(tra => tra.Task)
                 .WithMany()
-                .HasForeignKey(tra => tra.TaskId);
+                .HasForeignKey(tra => tra.TaskId)
+                .OnDelete(DeleteBehavior.Cascade);
                 
             modelBuilder.Entity<TaskResourceAssignment>()
                 .HasOne(tra => tra.Resource)
                 .WithMany()
-                .HasForeignKey(tra => tra.ResourceId);
+                .HasForeignKey(tra => tra.ResourceId)
+                .OnDelete(DeleteBehavior.Restrict);
                 
             // Sample seed data
             modelBuilder.Entity<Order>().HasData(
@@ -170,25 +172,25 @@ namespace OrdersManagement.Backend.Data
                 new Resource
                 {
                     Id = 1,
-                    Name = "CNC Machine 1",
+                    Name = "Maszyna CNC #1",
                     ResourceType = "Machine",
-                    Department = "Production",
+                    Department = "Produkcja",
                     Capacity = 10,
-                    CostPerHour = 50,
-                    Capabilities = "Precision cutting, metal processing",
+                    CostPerHour = 150,
+                    Capabilities = "Cięcie, frezowanie, wiercenie",
                     IsActive = true,
-                    WorkingHours = "08:00-16:00",
-                    DaysOff = "Saturday,Sunday"
+                    WorkingHours = "08:00-20:00",
+                    DaysOff = "Sunday"
                 },
                 new Resource
                 {
                     Id = 2,
                     Name = "Jan Kowalski",
                     ResourceType = "Person",
-                    Department = "Assembly",
+                    Department = "Produkcja",
                     Capacity = 1,
-                    CostPerHour = 30,
-                    Capabilities = "Mechanical assembly, quality control",
+                    CostPerHour = 50,
+                    Capabilities = "Obsługa maszyn CNC, programowanie",
                     IsActive = true,
                     WorkingHours = "08:00-16:00",
                     DaysOff = "Saturday,Sunday"
@@ -196,14 +198,13 @@ namespace OrdersManagement.Backend.Data
                 new Resource
                 {
                     Id = 3,
-                    Name = "Paint Booth 2",
-                    ResourceType = "Machine",
-                    Department = "Finishing",
-                    Capacity = 15,
-                    CostPerHour = 40,
-                    Capabilities = "Industrial painting, powder coating",
+                    Name = "Linia montażowa A",
+                    ResourceType = "Line",
+                    Department = "Montaż",
+                    Capacity = 100,
+                    CostPerHour = 200,
                     IsActive = true,
-                    WorkingHours = "08:00-16:00",
+                    WorkingHours = "06:00-22:00",
                     DaysOff = "Sunday"
                 }
             );
@@ -215,16 +216,16 @@ namespace OrdersManagement.Backend.Data
                     Id = 1,
                     OrderId = 1,
                     Title = "Przygotowanie materiałów",
-                    Description = "Przygotowanie materiałów do produkcji zgodnie ze specyfikacją",
+                    Description = "Przygotowanie surowców potrzebnych do realizacji zamówienia",
                     TaskType = "Preparation",
                     Priority = 3,
                     Status = "Completed",
                     EstimatedDuration = 120,
-                    ActualDuration = 110,
+                    ActualDuration = 90,
                     PlannedStartTime = new System.DateTime(2023, 1, 16, 8, 0, 0),
                     PlannedEndTime = new System.DateTime(2023, 1, 16, 10, 0, 0),
                     ActualStartTime = new System.DateTime(2023, 1, 16, 8, 0, 0),
-                    ActualEndTime = new System.DateTime(2023, 1, 16, 9, 50, 0),
+                    ActualEndTime = new System.DateTime(2023, 1, 16, 9, 30, 0),
                     CompletionPercentage = 100,
                     CreatedById = 1,
                     CreatedByName = "Administrator Systemu"
@@ -233,8 +234,8 @@ namespace OrdersManagement.Backend.Data
                 {
                     Id = 2,
                     OrderId = 1,
-                    Title = "Cięcie materiałów",
-                    Description = "Cięcie materiałów według wymiarów podanych w specyfikacji",
+                    Title = "Produkcja części",
+                    Description = "Produkcja komponentów zgodnie ze specyfikacją",
                     TaskType = "Production",
                     Priority = 3,
                     Status = "In Progress",
@@ -243,13 +244,13 @@ namespace OrdersManagement.Backend.Data
                     PlannedEndTime = new System.DateTime(2023, 1, 16, 14, 0, 0),
                     ActualStartTime = new System.DateTime(2023, 1, 16, 10, 0, 0),
                     PredecessorTaskIds = "1",
-                    CompletionPercentage = 60,
+                    CompletionPercentage = 50,
                     CreatedById = 1,
                     CreatedByName = "Administrator Systemu"
                 }
             );
             
-            // Sample task-resource assignments
+            // Sample task resource assignments
             modelBuilder.Entity<TaskResourceAssignment>().HasData(
                 new TaskResourceAssignment
                 {
@@ -257,7 +258,7 @@ namespace OrdersManagement.Backend.Data
                     TaskId = 1,
                     ResourceId = 2,
                     StartTime = new System.DateTime(2023, 1, 16, 8, 0, 0),
-                    EndTime = new System.DateTime(2023, 1, 16, 10, 0, 0),
+                    EndTime = new System.DateTime(2023, 1, 16, 9, 30, 0),
                     AllocationPercentage = 100,
                     CreatedById = 1,
                     CreatedByName = "Administrator Systemu"
@@ -270,6 +271,17 @@ namespace OrdersManagement.Backend.Data
                     StartTime = new System.DateTime(2023, 1, 16, 10, 0, 0),
                     EndTime = new System.DateTime(2023, 1, 16, 14, 0, 0),
                     AllocationPercentage = 100,
+                    CreatedById = 1,
+                    CreatedByName = "Administrator Systemu"
+                },
+                new TaskResourceAssignment
+                {
+                    Id = 3,
+                    TaskId = 2,
+                    ResourceId = 2,
+                    StartTime = new System.DateTime(2023, 1, 16, 10, 0, 0),
+                    EndTime = new System.DateTime(2023, 1, 16, 14, 0, 0),
+                    AllocationPercentage = 50,
                     CreatedById = 1,
                     CreatedByName = "Administrator Systemu"
                 }
