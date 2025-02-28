@@ -1,0 +1,41 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  background-color: #f8f9fa;
+  padding: 2rem 0;
+}
+
+.login-page .card {
+  border: 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.login-page h2 {
+  color: #343a40;
+  font-weight: 600;
+}
+
+.login-page h4 {
+  color: #343a40;
+  font-weight: 500;
+}
+
+.login-page .form-control {
+  padding: 0.75rem 1rem;
+}
+
+.login-page .form-control:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.login-page .btn-primary {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.login-page .btn-primary:hover {
+  background-color: #0b5ed7;
+  border-color: #0a58ca;
+}
