@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col, Spinner } from 'react-bootstrap';
 import { format } from 'date-fns';
 import { ordersApi } from '../../services/api';
+import OrderAttributeForm from './OrderAttributeForm';
 
 const OrderForm = ({ show, handleClose, editOrder = null, onOrderSaved }) => {
   const initialFormState = {
@@ -127,6 +128,10 @@ const OrderForm = ({ show, handleClose, editOrder = null, onOrderSaved }) => {
     }
   };
 
+  const handleAttributesChange = (updatedAttributes) => {
+    setAttributes(updatedAttributes);
+  };
+
   return (
     <Modal show={show} onHide={handleClose} size="lg">
       <Modal.Header closeButton>
@@ -209,9 +214,13 @@ const OrderForm = ({ show, handleClose, editOrder = null, onOrderSaved }) => {
             />
           </Form.Group>
           
-          {/* we'll add custom attributes editor in the next step */}
+          {/* Custom attributes editor */}
+          <OrderAttributeForm 
+            attributes={attributes} 
+            onChange={handleAttributesChange} 
+          />
           
-          <div className="d-flex justify-content-end">
+          <div className="d-flex justify-content-end mt-4">
             <Button variant="secondary" onClick={handleClose} className="me-2">
               Anuluj
             </Button>
