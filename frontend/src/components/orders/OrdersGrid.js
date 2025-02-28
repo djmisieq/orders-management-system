@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AgGridReact } from 'ag-grid-react';
-import { Button, Row, Col } from 'react-bootstrap';
+import { Button, Row, Col, Spinner } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import { format } from 'date-fns';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 import { ordersApi } from '../../services/api';
+import OrderForm from './OrderForm';
 import './OrdersGrid.css';
 
 const OrdersGrid = () => {
@@ -13,6 +14,8 @@ const OrdersGrid = () => {
   const [gridApi, setGridApi] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showOrderForm, setShowOrderForm] = useState(false);
+  const [orderToEdit, setOrderToEdit] = useState(null);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -59,14 +62,23 @@ const OrdersGrid = () => {
   };
 
   const handleAddOrder = () => {
-    // Navigate to add order form or open modal
-    console.log('Add order clicked');
+    setOrderToEdit(null);
+    setShowOrderForm(true);
   };
 
   const handleEditOrder = () => {
     if (!selectedOrder) return;
-    // Navigate to edit order form or open modal
-    console.log('Edit order clicked', selectedOrder);
+    setOrderToEdit(selectedOrder);
+    setShowOrderForm(true);
+  };
+
+  const handleCloseOrderForm = () => {
+    setShowOrderForm(false);
+    setOrderToEdit(null);
+  };
+
+  const handleOrderSaved = () => {
+    fetchOrders();
   };
 
   // Column definitions
@@ -149,6 +161,14 @@ const OrdersGrid = () => {
         </Col>
       </Row>
 
+      {loading && (
+        <div className="text-center my-4">
+          <Spinner animation="border" role="status">
+            <span className="visually-hidden">Ładowanie...</span>
+          </Spinner>
+        </div>
+      )}
+
       <div className="ag-theme-alpine orders-grid-container">
         <AgGridReact
           rowData={rowData}
@@ -163,6 +183,13 @@ const OrdersGrid = () => {
           domLayout="autoHeight"
         />
       </div>
+
+      <OrderForm 
+        show={showOrderForm} 
+        handleClose={handleCloseOrderForm} 
+        editOrder={orderToEdit}
+        onOrderSaved={handleOrderSaved}
+      />
     </div>
   );
 };
