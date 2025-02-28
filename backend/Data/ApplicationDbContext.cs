@@ -15,6 +15,11 @@ namespace OrdersManagement.Backend.Data
         public DbSet<OrderComment> OrderComments { get; set; }
         public DbSet<OrderHistory> OrderHistory { get; set; }
         
+        // Production scheduling models
+        public DbSet<Resource> Resources { get; set; }
+        public DbSet<ProductionTask> ProductionTasks { get; set; }
+        public DbSet<TaskResourceAssignment> TaskResourceAssignments { get; set; }
+        
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -39,6 +44,26 @@ namespace OrdersManagement.Backend.Data
                 .WithOne(h => h.Order)
                 .HasForeignKey(h => h.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
+                
+            // Production Task to Order relationship
+            modelBuilder.Entity<ProductionTask>()
+                .HasOne(t => t.Order)
+                .WithMany()
+                .HasForeignKey(t => t.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+                
+            // Many-to-many relationship between ProductionTask and Resource
+            modelBuilder.Entity<TaskResourceAssignment>()
+                .HasOne(tra => tra.Task)
+                .WithMany()
+                .HasForeignKey(tra => tra.TaskId)
+                .OnDelete(DeleteBehavior.Cascade);
+                
+            modelBuilder.Entity<TaskResourceAssignment>()
+                .HasOne(tra => tra.Resource)
+                .WithMany()
+                .HasForeignKey(tra => tra.ResourceId)
+                .OnDelete(DeleteBehavior.Restrict); // Don't cascade delete resources
                 
             // Sample seed data
             modelBuilder.Entity<Order>().HasData(
@@ -139,6 +164,124 @@ namespace OrdersManagement.Backend.Data
                     UserId = 1,
                     UserName = "Administrator Systemu",
                     ChangedAt = new System.DateTime(2023, 1, 15, 9, 30, 0)
+                }
+            );
+            
+            // Sample resources
+            modelBuilder.Entity<Resource>().HasData(
+                new Resource
+                {
+                    Id = 1,
+                    Name = "Maszyna CNC #1",
+                    ResourceType = "Machine",
+                    Department = "Produkcja",
+                    Capacity = 10,
+                    CostPerHour = 150,
+                    Capabilities = "Cięcie, Wiercenie, Frezowanie",
+                    IsActive = true,
+                    WorkingHours = "08:00-20:00",
+                    DaysOff = "Sunday"
+                },
+                new Resource
+                {
+                    Id = 2,
+                    Name = "Jan Kowalski",
+                    ResourceType = "Person",
+                    Department = "Produkcja",
+                    Capabilities = "Operator CNC, Technik",
+                    IsActive = true,
+                    WorkingHours = "08:00-16:00",
+                    DaysOff = "Saturday,Sunday"
+                },
+                new Resource
+                {
+                    Id = 3,
+                    Name = "Stanowisko montażowe #2",
+                    ResourceType = "Workstation",
+                    Department = "Montaż",
+                    Capacity = 5,
+                    CostPerHour = 50,
+                    IsActive = true,
+                    WorkingHours = "08:00-16:00",
+                    DaysOff = "Saturday,Sunday"
+                }
+            );
+            
+            // Sample production tasks
+            modelBuilder.Entity<ProductionTask>().HasData(
+                new ProductionTask
+                {
+                    Id = 1,
+                    OrderId = 1,
+                    Title = "Przygotowanie materiałów",
+                    Description = "Przygotowanie materiałów do produkcji zamówienia ACME Corp",
+                    TaskType = "Preparation",
+                    Priority = 3,
+                    Status = "Completed",
+                    EstimatedDuration = 120, // 2 hours
+                    ActualDuration = 90, // 1.5 hours
+                    PlannedStartTime = new System.DateTime(2023, 1, 16, 8, 0, 0),
+                    PlannedEndTime = new System.DateTime(2023, 1, 16, 10, 0, 0),
+                    ActualStartTime = new System.DateTime(2023, 1, 16, 8, 0, 0),
+                    ActualEndTime = new System.DateTime(2023, 1, 16, 9, 30, 0),
+                    CompletionPercentage = 100,
+                    CreatedById = 1,
+                    CreatedByName = "Administrator Systemu"
+                },
+                new ProductionTask
+                {
+                    Id = 2,
+                    OrderId = 1,
+                    Title = "Produkcja komponentów",
+                    Description = "Produkcja komponentów na maszynie CNC",
+                    TaskType = "Production",
+                    Priority = 3,
+                    Status = "In Progress",
+                    EstimatedDuration = 480, // 8 hours
+                    PlannedStartTime = new System.DateTime(2023, 1, 16, 10, 0, 0),
+                    PlannedEndTime = new System.DateTime(2023, 1, 16, 18, 0, 0),
+                    ActualStartTime = new System.DateTime(2023, 1, 16, 10, 0, 0),
+                    PredecessorTaskIds = "1", // Depends on task #1
+                    CompletionPercentage = 60,
+                    CreatedById = 1,
+                    CreatedByName = "Administrator Systemu"
+                }
+            );
+            
+            // Sample task resource assignments
+            modelBuilder.Entity<TaskResourceAssignment>().HasData(
+                new TaskResourceAssignment
+                {
+                    Id = 1,
+                    TaskId = 1,
+                    ResourceId = 2, // Jan Kowalski
+                    StartTime = new System.DateTime(2023, 1, 16, 8, 0, 0),
+                    EndTime = new System.DateTime(2023, 1, 16, 9, 30, 0),
+                    AllocationPercentage = 100,
+                    CreatedById = 1,
+                    CreatedByName = "Administrator Systemu"
+                },
+                new TaskResourceAssignment
+                {
+                    Id = 2,
+                    TaskId = 2,
+                    ResourceId = 1, // Maszyna CNC #1
+                    StartTime = new System.DateTime(2023, 1, 16, 10, 0, 0),
+                    EndTime = new System.DateTime(2023, 1, 16, 18, 0, 0),
+                    AllocationPercentage = 100,
+                    CreatedById = 1,
+                    CreatedByName = "Administrator Systemu"
+                },
+                new TaskResourceAssignment
+                {
+                    Id = 3,
+                    TaskId = 2,
+                    ResourceId = 2, // Jan Kowalski
+                    StartTime = new System.DateTime(2023, 1, 16, 10, 0, 0),
+                    EndTime = new System.DateTime(2023, 1, 16, 18, 0, 0),
+                    AllocationPercentage = 50, // Only half of his time
+                    CreatedById = 1,
+                    CreatedByName = "Administrator Systemu"
                 }
             );
         }
