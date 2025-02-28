@@ -22,9 +22,40 @@ Aplikacja do zarządzania zgłoszeniami zamówień produkcyjnych, umożliwiając
 - **Orders** - główna tabela przechowująca zamówienia
 - **OrderAttributes** - tabela do przechowywania niestandardowych atrybutów zamówień
 
-## Instrukcje uruchomienia
+## Uruchomienie w GitHub Codespaces
 
-### Uruchomienie lokalne
+Aby uruchomić projekt w środowisku GitHub Codespaces:
+
+1. Kliknij przycisk "Code" na górze repozytorium
+2. Wybierz zakładkę "Codespaces"
+3. Kliknij "Create codespace on main"
+4. Poczekaj na utworzenie i inicjalizację środowiska
+
+Po załadowaniu środowiska:
+
+1. Uruchom bazę danych:
+   ```
+   docker-compose up -d
+   ```
+
+2. Uruchom backend:
+   ```
+   cd backend
+   dotnet run
+   ```
+
+3. W nowym terminalu uruchom frontend:
+   ```
+   cd frontend
+   npm start
+   ```
+
+Aplikacja będzie dostępna pod adresem:
+- Frontend: https://[codespace-url]-3000.app.github.dev
+- Backend: https://[codespace-url]-5000.app.github.dev
+- Swagger API: https://[codespace-url]-5000.app.github.dev/swagger
+
+## Lokalne uruchomienie
 
 1. Uruchom bazę danych PostgreSQL za pomocą Docker Compose:
    ```
@@ -44,14 +75,53 @@ Aplikacja do zarządzania zgłoszeniami zamówień produkcyjnych, umożliwiając
    npm start
    ```
 
-### Uruchomienie w środowisku GitHub Codespaces
+## Testowanie API
 
-1. Otwórz projekt w GitHub Codespaces
-2. Uruchom bazę danych PostgreSQL:
-   ```
-   docker-compose up -d
-   ```
-3. Uruchom backend i frontend jak w instrukcji dla środowiska lokalnego
+Przykładowe zapytania do API:
+
+### Pobranie wszystkich zamówień
+```
+GET http://localhost:5000/api/orders
+```
+
+### Pobranie zamówienia po ID
+```
+GET http://localhost:5000/api/orders/1
+```
+
+### Utworzenie nowego zamówienia
+```
+POST http://localhost:5000/api/orders
+Content-Type: application/json
+
+{
+  "customerName": "Nowy Klient",
+  "orderDate": "2023-03-15T00:00:00",
+  "quantity": 15,
+  "status": "New",
+  "description": "Nowe zamówienie testowe"
+}
+```
+
+### Aktualizacja zamówienia
+```
+PUT http://localhost:5000/api/orders/1
+Content-Type: application/json
+
+{
+  "id": 1,
+  "customerName": "ACME Corp (Zaktualizowane)",
+  "orderDate": "2023-01-15T00:00:00",
+  "quantity": 12,
+  "status": "In Progress",
+  "description": "Zaktualizowane zamówienie"
+}
+```
+
+### Usunięcie zamówienia
+```
+DELETE http://localhost:5000/api/orders/3
+```
 
 ## Rozwój iteracyjny
 
