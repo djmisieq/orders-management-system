@@ -1,6 +1,13 @@
+.layout-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
 .layout-container {
   display: flex;
-  min-height: 100vh;
+  flex: 1;
+  min-height: calc(100vh - 56px); /* Subtract navbar height */
   width: 100%;
 }
 
