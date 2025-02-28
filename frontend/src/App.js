@@ -13,6 +13,7 @@ import Orders from './pages/Orders';
 import Reports from './pages/Reports';
 import Login from './pages/Login';
 import Unauthorized from './pages/Unauthorized';
+import ProductionScheduling from './pages/ProductionScheduling';
 
 function App() {
   return (
@@ -51,6 +52,17 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <Reports />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route 
+          path="/scheduling" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ProductionScheduling />
               </Layout>
             </ProtectedRoute>
           }
