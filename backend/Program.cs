@@ -23,6 +23,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Add repositories
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IOrderCommentRepository, OrderCommentRepository>();
+builder.Services.AddScoped<IOrderHistoryRepository, OrderHistoryRepository>();
 
 // Add CORS policy
 builder.Services.AddCors(options =>
