@@ -1,0 +1,23 @@
+{
+  "name": "Orders Management System",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "postgres",
+  "workspaceFolder": "/workspace",
+  "forwardPorts": [3000, 5000, 5432],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csharp",
+        "ms-azuretools.vscode-docker",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+      }
+    }
+  },
+  "postCreateCommand": "cd backend && dotnet restore && cd ../frontend && npm install",
+  "remoteUser": "vscode"
+}
