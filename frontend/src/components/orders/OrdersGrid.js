@@ -6,17 +6,14 @@ import { format } from 'date-fns';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 import { ordersApi } from '../../services/api';
-import OrderForm from './OrderForm';
 import OrdersFilter from './OrdersFilter';
 import './OrdersGrid.css';
 
-const OrdersGrid = () => {
+const OrdersGrid = ({ onViewOrder, onAddOrder, onEditOrder }) => {
   const [rowData, setRowData] = useState([]);
   const [gridApi, setGridApi] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [showOrderForm, setShowOrderForm] = useState(false);
-  const [orderToEdit, setOrderToEdit] = useState(null);
   const [filterModel, setFilterModel] = useState({});
 
   const fetchOrders = useCallback(async () => {
@@ -99,23 +96,31 @@ const OrdersGrid = () => {
   };
 
   const handleAddOrder = () => {
-    setOrderToEdit(null);
-    setShowOrderForm(true);
+    if (onAddOrder) {
+      onAddOrder();
+    }
   };
 
   const handleEditOrder = () => {
     if (!selectedOrder) return;
-    setOrderToEdit(selectedOrder);
-    setShowOrderForm(true);
+    
+    if (onEditOrder) {
+      onEditOrder(selectedOrder);
+    }
   };
 
-  const handleCloseOrderForm = () => {
-    setShowOrderForm(false);
-    setOrderToEdit(null);
+  const handleViewOrder = () => {
+    if (!selectedOrder) return;
+    
+    if (onViewOrder) {
+      onViewOrder(selectedOrder.id);
+    }
   };
 
-  const handleOrderSaved = () => {
-    fetchOrders();
+  const handleRowDoubleClick = (event) => {
+    if (onViewOrder) {
+      onViewOrder(event.data.id);
+    }
   };
 
   const handleFilterChange = (newFilterModel) => {
@@ -250,6 +255,14 @@ const OrdersGrid = () => {
             <FaEdit /> Edytuj
           </Button>
           <Button 
+            variant="info" 
+            onClick={handleViewOrder}
+            className="me-2"
+            disabled={!selectedOrder}
+          >
+            <FaEye /> Szczegóły
+          </Button>
+          <Button 
             variant="danger" 
             onClick={handleDelete}
             className="me-2"
@@ -286,6 +299,7 @@ const OrdersGrid = () => {
           rowSelection="single"
           onGridReady={onGridReady}
           onSelectionChanged={onRowSelected}
+          onRowDoubleClicked={handleRowDoubleClick}
           animateRows={true}
           domLayout="autoHeight"
           enableCellTextSelection={true}
@@ -293,13 +307,6 @@ const OrdersGrid = () => {
           rowClass="order-row"
         />
       </div>
-
-      <OrderForm 
-        show={showOrderForm} 
-        handleClose={handleCloseOrderForm} 
-        editOrder={orderToEdit}
-        onOrderSaved={handleOrderSaved}
-      />
     </div>
   );
 };
