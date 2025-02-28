@@ -18,7 +18,7 @@ namespace OrdersManagement.Backend.Data.Repositories
         
         public async Task<IEnumerable<Resource>> GetAllResourcesAsync()
         {
-            return await _context.Resources.OrderBy(r => r.Name).ToListAsync();
+            return await _context.Resources.ToListAsync();
         }
         
         public async Task<Resource> GetResourceByIdAsync(int id)
@@ -30,7 +30,6 @@ namespace OrdersManagement.Backend.Data.Repositories
         {
             return await _context.Resources
                 .Where(r => r.ResourceType == resourceType)
-                .OrderBy(r => r.Name)
                 .ToListAsync();
         }
         
@@ -38,28 +37,27 @@ namespace OrdersManagement.Backend.Data.Repositories
         {
             return await _context.Resources
                 .Where(r => r.Department == department)
-                .OrderBy(r => r.Name)
                 .ToListAsync();
         }
         
-        public async Task<IEnumerable<Resource>> GetAvailableResourcesAsync(DateTime startTime, DateTime endTime)
+        public async Task<IEnumerable<Resource>> GetAvailableResourcesForPeriodAsync(DateTime startTime, DateTime endTime)
         {
             // Get all resources
             var allResources = await _context.Resources
                 .Where(r => r.IsActive)
                 .ToListAsync();
             
-            // Get all resources that are already assigned during the requested time period
-            var busyResourceIds = await _context.TaskResourceAssignments
-                .Where(tra => 
-                    (tra.StartTime <= endTime && tra.EndTime >= startTime) // Overlapping time period
+            // Get resources that are already assigned during the specified time period
+            var assignedResourceIds = await _context.TaskResourceAssignments
+                .Where(a => 
+                    (a.StartTime <= endTime && a.EndTime >= startTime)
                 )
-                .Select(tra => tra.ResourceId)
+                .Select(a => a.ResourceId)
                 .Distinct()
                 .ToListAsync();
             
-            // Return resources that are not in the busy list
-            return allResources.Where(r => !busyResourceIds.Contains(r.Id)).ToList();
+            // Filter out assigned resources
+            return allResources.Where(r => !assignedResourceIds.Contains(r.Id));
         }
         
         public async Task<Resource> CreateResourceAsync(Resource resource)
@@ -76,6 +74,7 @@ namespace OrdersManagement.Backend.Data.Repositories
             try
             {
                 await _context.SaveChangesAsync();
+                return resource;
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -85,8 +84,6 @@ namespace OrdersManagement.Backend.Data.Repositories
                 }
                 throw;
             }
-            
-            return resource;
         }
         
         public async Task<bool> DeleteResourceAsync(int id)
@@ -99,23 +96,20 @@ namespace OrdersManagement.Backend.Data.Repositories
             
             // Check if the resource is assigned to any tasks
             bool isAssigned = await _context.TaskResourceAssignments
-                .AnyAsync(tra => tra.ResourceId == id);
+                .AnyAsync(a => a.ResourceId == id);
             
             if (isAssigned)
             {
-                // Don't delete, just mark as inactive
-                resource.IsActive = false;
-                await _context.SaveChangesAsync();
-                return true;
+                // Cannot delete a resource that is assigned to tasks
+                return false;
             }
             
-            // If not assigned, we can safely delete
             _context.Resources.Remove(resource);
             await _context.SaveChangesAsync();
             return true;
         }
         
-        public async Task<bool> ResourceExistsAsync(int id)
+        private async Task<bool> ResourceExistsAsync(int id)
         {
             return await _context.Resources.AnyAsync(r => r.Id == id);
         }
