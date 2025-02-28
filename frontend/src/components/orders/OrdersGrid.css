@@ -1,6 +1,6 @@
 .orders-grid-container {
   width: 100%;
-  height: calc(100vh - 200px);
+  height: calc(100vh - 350px);
   min-height: 400px;
 }
 
@@ -22,4 +22,46 @@
 
 .ag-paging-panel {
   padding: 12px !important;
+}
+
+.order-row:hover {
+  background-color: rgba(0, 123, 255, 0.05) !important;
+  cursor: pointer;
+}
+
+/* Style for floating filters */
+.ag-floating-filter-body input {
+  font-size: 0.9rem;
+  padding: 0.25rem;
+}
+
+/* Style for column headers */
+.ag-header-cell {
+  background-color: #f8f9fa;
+}
+
+/* Style for pagination controls */
+.ag-paging-panel {
+  background-color: #f8f9fa;
+}
+
+/* Custom status colors */
+.status-new {
+  color: #0d6efd;
+  font-weight: bold;
+}
+
+.status-in-progress {
+  color: #ffc107;
+  font-weight: bold;
+}
+
+.status-completed {
+  color: #198754;
+  font-weight: bold;
+}
+
+.status-cancelled {
+  color: #dc3545;
+  font-weight: bold;
 }
