@@ -29,7 +29,28 @@ namespace OrdersManagement.Backend.Models
         
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
         
-        // Navigation property
+        // Wewnętrzny status dla śledzenia procesów
+        [MaxLength(50)]
+        public string InternalStatus { get; set; }
+        
+        // Priorytet zamówienia (1-5)
+        public int Priority { get; set; } = 3;
+        
+        // Planowana data realizacji
+        public DateTime? TargetCompletionDate { get; set; }
+        
+        // Rzeczywista data realizacji
+        public DateTime? ActualCompletionDate { get; set; }
+        
+        // Relacje
+        
+        // Atrybuty niestandardowe
         public virtual ICollection<OrderAttribute> Attributes { get; set; } = new List<OrderAttribute>();
+        
+        // Komentarze
+        public virtual ICollection<OrderComment> Comments { get; set; } = new List<OrderComment>();
+        
+        // Historia zmian
+        public virtual ICollection<OrderHistory> History { get; set; } = new List<OrderHistory>();
     }
 }
