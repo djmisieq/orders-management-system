@@ -11,14 +11,13 @@ namespace OrdersManagement.Backend.Data.Repositories
         Task<ProductionTask> GetTaskByIdAsync(int id);
         Task<IEnumerable<ProductionTask>> GetTasksByOrderIdAsync(int orderId);
         Task<IEnumerable<ProductionTask>> GetTasksByStatusAsync(string status);
-        Task<IEnumerable<ProductionTask>> GetTasksByDateRangeAsync(DateTime startDate, DateTime endDate);
+        Task<IEnumerable<ProductionTask>> GetTasksByDateRangeAsync(DateTime start, DateTime end);
         Task<IEnumerable<ProductionTask>> GetTasksByResourceIdAsync(int resourceId);
         Task<ProductionTask> CreateTaskAsync(ProductionTask task);
         Task<ProductionTask> UpdateTaskAsync(ProductionTask task);
         Task<bool> DeleteTaskAsync(int id);
         Task<bool> TaskExistsAsync(int id);
-        Task<bool> UpdateTaskStatusAsync(int id, string status, int completionPercentage, int userId, string userName);
-        Task<bool> AssignResourceToTaskAsync(int taskId, int resourceId, DateTime startTime, DateTime endTime, decimal allocationPercentage, int userId, string userName);
-        Task<bool> RemoveResourceFromTaskAsync(int taskId, int resourceId);
+        Task<ProductionTask> UpdateTaskStatusAsync(int id, string status, int? userId = null, string userName = null);
+        Task<ProductionTask> UpdateTaskProgressAsync(int id, int completionPercentage, int? userId = null, string userName = null);
     }
 }
