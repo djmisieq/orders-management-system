@@ -20,7 +20,6 @@ namespace OrdersManagement.Backend.Data.Repositories
         {
             return await _context.ProductionTasks
                 .Include(t => t.Order)
-                .OrderByDescending(t => t.PlannedStartTime)
                 .ToListAsync();
         }
         
@@ -42,48 +41,44 @@ namespace OrdersManagement.Backend.Data.Repositories
         public async Task<IEnumerable<ProductionTask>> GetTasksByStatusAsync(string status)
         {
             return await _context.ProductionTasks
-                .Include(t => t.Order)
                 .Where(t => t.Status == status)
+                .Include(t => t.Order)
                 .OrderBy(t => t.PlannedStartTime)
                 .ToListAsync();
         }
         
-        public async Task<IEnumerable<ProductionTask>> GetTasksByDateRangeAsync(DateTime startDate, DateTime endDate)
+        public async Task<IEnumerable<ProductionTask>> GetTasksForPeriodAsync(DateTime startDate, DateTime endDate)
         {
             return await _context.ProductionTasks
-                .Include(t => t.Order)
                 .Where(t => 
-                    (t.PlannedStartTime >= startDate && t.PlannedStartTime <= endDate) ||
-                    (t.PlannedEndTime >= startDate && t.PlannedEndTime <= endDate) ||
-                    (t.PlannedStartTime <= startDate && t.PlannedEndTime >= endDate)
+                    (t.PlannedStartTime <= endDate && t.PlannedEndTime >= startDate) ||
+                    (t.ActualStartTime <= endDate && t.ActualEndTime >= startDate)
                 )
+                .Include(t => t.Order)
                 .OrderBy(t => t.PlannedStartTime)
                 .ToListAsync();
         }
         
         public async Task<IEnumerable<ProductionTask>> GetTasksByResourceIdAsync(int resourceId)
         {
+            // Get all task IDs that have the specified resource assigned
             var taskIds = await _context.TaskResourceAssignments
-                .Where(tra => tra.ResourceId == resourceId)
-                .Select(tra => tra.TaskId)
+                .Where(a => a.ResourceId == resourceId)
+                .Select(a => a.TaskId)
                 .Distinct()
                 .ToListAsync();
             
+            // Get the tasks
             return await _context.ProductionTasks
-                .Include(t => t.Order)
                 .Where(t => taskIds.Contains(t.Id))
+                .Include(t => t.Order)
                 .OrderBy(t => t.PlannedStartTime)
                 .ToListAsync();
         }
         
         public async Task<ProductionTask> CreateTaskAsync(ProductionTask task)
         {
-            // Ensure timestamps are set
             task.CreatedAt = DateTime.UtcNow;
-            if (task.UpdatedAt == null)
-            {
-                task.UpdatedAt = DateTime.UtcNow;
-            }
             
             _context.ProductionTasks.Add(task);
             await _context.SaveChangesAsync();
@@ -92,14 +87,18 @@ namespace OrdersManagement.Backend.Data.Repositories
         
         public async Task<ProductionTask> UpdateTaskAsync(ProductionTask task)
         {
-            // Update the timestamp
             task.UpdatedAt = DateTime.UtcNow;
             
             _context.Entry(task).State = EntityState.Modified;
+            // Don't modify CreatedAt and CreatedBy fields
+            _context.Entry(task).Property(t => t.CreatedAt).IsModified = false;
+            _context.Entry(task).Property(t => t.CreatedById).IsModified = false;
+            _context.Entry(task).Property(t => t.CreatedByName).IsModified = false;
             
             try
             {
                 await _context.SaveChangesAsync();
+                return task;
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -109,8 +108,6 @@ namespace OrdersManagement.Backend.Data.Repositories
                 }
                 throw;
             }
-            
-            return task;
         }
         
         public async Task<bool> DeleteTaskAsync(int id)
@@ -121,116 +118,39 @@ namespace OrdersManagement.Backend.Data.Repositories
                 return false;
             }
             
-            // Delete related resource assignments
+            // Delete associated resource assignments
             var assignments = await _context.TaskResourceAssignments
-                .Where(tra => tra.TaskId == id)
+                .Where(a => a.TaskId == id)
                 .ToListAsync();
-            
+                
             _context.TaskResourceAssignments.RemoveRange(assignments);
             
             // Delete the task
             _context.ProductionTasks.Remove(task);
             await _context.SaveChangesAsync();
-            
             return true;
         }
         
-        public async Task<bool> TaskExistsAsync(int id)
+        public async Task<IEnumerable<TaskResourceAssignment>> GetTaskResourceAssignmentsAsync(int taskId)
         {
-            return await _context.ProductionTasks.AnyAsync(t => t.Id == id);
+            return await _context.TaskResourceAssignments
+                .Where(a => a.TaskId == taskId)
+                .Include(a => a.Resource)
+                .ToListAsync();
         }
         
-        public async Task<bool> UpdateTaskStatusAsync(int id, string status, int completionPercentage, int userId, string userName)
+        public async Task<TaskResourceAssignment> AssignResourceToTaskAsync(TaskResourceAssignment assignment)
         {
-            var task = await _context.ProductionTasks.FindAsync(id);
-            if (task == null)
-            {
-                return false;
-            }
+            assignment.CreatedAt = DateTime.UtcNow;
             
-            // Update status and completion
-            string oldStatus = task.Status;
-            task.Status = status;
-            task.CompletionPercentage = completionPercentage;
-            task.UpdatedAt = DateTime.UtcNow;
-            task.UpdatedById = userId;
-            task.UpdatedByName = userName;
-            
-            // If status changed to "InProgress" and no actual start time, set it
-            if (status == "InProgress" && task.ActualStartTime == null)
-            {
-                task.ActualStartTime = DateTime.UtcNow;
-            }
-            
-            // If status changed to "Completed" and no actual end time, set it
-            if (status == "Completed" && task.ActualEndTime == null)
-            {
-                task.ActualEndTime = DateTime.UtcNow;
-                
-                // Calculate actual duration in minutes
-                if (task.ActualStartTime.HasValue)
-                {
-                    var duration = (int)Math.Round((task.ActualEndTime.Value - task.ActualStartTime.Value).TotalMinutes);
-                    task.ActualDuration = duration;
-                }
-                
-                // Ensure completion is 100%
-                task.CompletionPercentage = 100;
-            }
-            
+            _context.TaskResourceAssignments.Add(assignment);
             await _context.SaveChangesAsync();
-            return true;
+            return assignment;
         }
         
-        public async Task<bool> AssignResourceToTaskAsync(int taskId, int resourceId, DateTime startTime, DateTime endTime, decimal allocationPercentage, int userId, string userName)
+        public async Task<bool> RemoveResourceFromTaskAsync(int assignmentId)
         {
-            // Check if task and resource exist
-            var task = await _context.ProductionTasks.FindAsync(taskId);
-            var resource = await _context.Resources.FindAsync(resourceId);
-            
-            if (task == null || resource == null)
-            {
-                return false;
-            }
-            
-            // Check for existing assignment
-            var existingAssignment = await _context.TaskResourceAssignments
-                .FirstOrDefaultAsync(tra => tra.TaskId == taskId && tra.ResourceId == resourceId);
-                
-            if (existingAssignment != null)
-            {
-                // Update existing assignment
-                existingAssignment.StartTime = startTime;
-                existingAssignment.EndTime = endTime;
-                existingAssignment.AllocationPercentage = allocationPercentage;
-            }
-            else
-            {
-                // Create new assignment
-                var assignment = new TaskResourceAssignment
-                {
-                    TaskId = taskId,
-                    ResourceId = resourceId,
-                    StartTime = startTime,
-                    EndTime = endTime,
-                    AllocationPercentage = allocationPercentage,
-                    CreatedAt = DateTime.UtcNow,
-                    CreatedById = userId,
-                    CreatedByName = userName
-                };
-                
-                _context.TaskResourceAssignments.Add(assignment);
-            }
-            
-            await _context.SaveChangesAsync();
-            return true;
-        }
-        
-        public async Task<bool> RemoveResourceFromTaskAsync(int taskId, int resourceId)
-        {
-            var assignment = await _context.TaskResourceAssignments
-                .FirstOrDefaultAsync(tra => tra.TaskId == taskId && tra.ResourceId == resourceId);
-                
+            var assignment = await _context.TaskResourceAssignments.FindAsync(assignmentId);
             if (assignment == null)
             {
                 return false;
@@ -238,8 +158,89 @@ namespace OrdersManagement.Backend.Data.Repositories
             
             _context.TaskResourceAssignments.Remove(assignment);
             await _context.SaveChangesAsync();
-            
             return true;
+        }
+        
+        public async Task<IEnumerable<ProductionTask>> GetDependentTasksAsync(int taskId)
+        {
+            var task = await _context.ProductionTasks.FindAsync(taskId);
+            if (task == null)
+            {
+                return new List<ProductionTask>();
+            }
+            
+            // Find all tasks that have this task as a predecessor
+            return await _context.ProductionTasks
+                .Where(t => t.PredecessorTaskIds != null && t.PredecessorTaskIds.Contains(taskId.ToString()))
+                .ToListAsync();
+        }
+        
+        public async Task<bool> UpdateTaskStatusAsync(int taskId, string newStatus, int userId, string userName)
+        {
+            var task = await _context.ProductionTasks.FindAsync(taskId);
+            if (task == null)
+            {
+                return false;
+            }
+            
+            string oldStatus = task.Status;
+            task.Status = newStatus;
+            task.UpdatedAt = DateTime.UtcNow;
+            task.UpdatedById = userId;
+            task.UpdatedByName = userName;
+            
+            // Update actual start/end time based on status
+            if (newStatus == "In Progress" && task.ActualStartTime == null)
+            {
+                task.ActualStartTime = DateTime.UtcNow;
+            }
+            else if ((newStatus == "Completed" || newStatus == "Cancelled") && task.ActualEndTime == null)
+            {
+                task.ActualEndTime = DateTime.UtcNow;
+                
+                if (newStatus == "Completed")
+                {
+                    task.CompletionPercentage = 100;
+                }
+            }
+            
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        
+        public async Task<bool> UpdateTaskProgressAsync(int taskId, int completionPercentage, int userId, string userName)
+        {
+            var task = await _context.ProductionTasks.FindAsync(taskId);
+            if (task == null)
+            {
+                return false;
+            }
+            
+            // Validate completion percentage
+            if (completionPercentage < 0 || completionPercentage > 100)
+            {
+                return false;
+            }
+            
+            task.CompletionPercentage = completionPercentage;
+            task.UpdatedAt = DateTime.UtcNow;
+            task.UpdatedById = userId;
+            task.UpdatedByName = userName;
+            
+            // If completion is 100%, update status to Completed if not already
+            if (completionPercentage == 100 && task.Status != "Completed")
+            {
+                task.Status = "Completed";
+                task.ActualEndTime = DateTime.UtcNow;
+            }
+            
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        
+        private async Task<bool> TaskExistsAsync(int id)
+        {
+            return await _context.ProductionTasks.AnyAsync(t => t.Id == id);
         }
     }
 }
