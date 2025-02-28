@@ -12,6 +12,8 @@ namespace OrdersManagement.Backend.Data
         
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderAttribute> OrderAttributes { get; set; }
+        public DbSet<OrderComment> OrderComments { get; set; }
+        public DbSet<OrderHistory> OrderHistory { get; set; }
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -24,6 +26,20 @@ namespace OrdersManagement.Backend.Data
                 .HasForeignKey(a => a.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
                 
+            // Order Comments configuration
+            modelBuilder.Entity<Order>()
+                .HasMany(o => o.Comments)
+                .WithOne(c => c.Order)
+                .HasForeignKey(c => c.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+                
+            // Order History configuration
+            modelBuilder.Entity<Order>()
+                .HasMany(o => o.History)
+                .WithOne(h => h.Order)
+                .HasForeignKey(h => h.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+                
             // Sample seed data
             modelBuilder.Entity<Order>().HasData(
                 new Order 
@@ -33,7 +49,9 @@ namespace OrdersManagement.Backend.Data
                     OrderDate = new System.DateTime(2023, 1, 15),
                     Quantity = 10,
                     Status = "In Progress",
-                    Description = "Standard order from regular customer"
+                    Description = "Standard order from regular customer",
+                    Priority = 3,
+                    InternalStatus = "Production Planning"
                 },
                 new Order 
                 { 
@@ -42,7 +60,10 @@ namespace OrdersManagement.Backend.Data
                     OrderDate = new System.DateTime(2023, 2, 20),
                     Quantity = 5,
                     Status = "Completed",
-                    Description = "Rush order, high priority"
+                    Description = "Rush order, high priority",
+                    Priority = 5,
+                    InternalStatus = "Delivered",
+                    ActualCompletionDate = new System.DateTime(2023, 3, 1)
                 }
             );
             
@@ -70,6 +91,54 @@ namespace OrdersManagement.Backend.Data
                     AttributeName = "Priority", 
                     AttributeValue = "High",
                     AttributeType = "string"
+                }
+            );
+            
+            // Sample comments for orders
+            modelBuilder.Entity<OrderComment>().HasData(
+                new OrderComment
+                {
+                    Id = 1,
+                    OrderId = 1,
+                    Content = "Klient prosi o kontakt przed wysyłką",
+                    UserId = 1,
+                    UserName = "Administrator Systemu",
+                    CreatedAt = new System.DateTime(2023, 1, 15, 10, 0, 0)
+                },
+                new OrderComment
+                {
+                    Id = 2,
+                    OrderId = 1,
+                    Content = "Potwierdzam, że skontaktowałem się z klientem",
+                    UserId = 2,
+                    UserName = "Zwykły Użytkownik",
+                    CreatedAt = new System.DateTime(2023, 1, 16, 14, 30, 0)
+                }
+            );
+            
+            // Sample history entries
+            modelBuilder.Entity<OrderHistory>().HasData(
+                new OrderHistory
+                {
+                    Id = 1,
+                    OrderId = 1,
+                    ChangeType = "Create",
+                    Description = "Utworzono nowe zamówienie",
+                    UserId = 1,
+                    UserName = "Administrator Systemu",
+                    ChangedAt = new System.DateTime(2023, 1, 15, 9, 0, 0)
+                },
+                new OrderHistory
+                {
+                    Id = 2,
+                    OrderId = 1,
+                    ChangeType = "StatusChange",
+                    Description = "Zmieniono status z 'New' na 'In Progress'",
+                    OldValue = "New",
+                    NewValue = "In Progress",
+                    UserId = 1,
+                    UserName = "Administrator Systemu",
+                    ChangedAt = new System.DateTime(2023, 1, 15, 9, 30, 0)
                 }
             );
         }
