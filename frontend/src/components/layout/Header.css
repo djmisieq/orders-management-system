@@ -1,0 +1,22 @@
+.app-header {
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+  font-weight: 600;
+}
+
+#user-dropdown .dropdown-toggle::after {
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+#user-dropdown .dropdown-item {
+  padding: 0.5rem 1rem;
+}
+
+.dropdown-item .badge {
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
