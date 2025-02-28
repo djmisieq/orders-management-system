@@ -4,7 +4,8 @@ import {
   FaHome, 
   FaShoppingCart, 
   FaChartBar, 
-  FaCog
+  FaCog,
+  FaCalendarAlt
 } from 'react-icons/fa';
 import './Sidebar.css';
 
@@ -33,6 +34,15 @@ const Sidebar = () => {
           >
             <span className="icon"><FaShoppingCart /></span>
             <span>Zamówienia</span>
+          </NavLink>
+        </li>
+        <li>
+          <NavLink 
+            to="/scheduling" 
+            className={({isActive}) => isActive ? 'active' : ''}
+          >
+            <span className="icon"><FaCalendarAlt /></span>
+            <span>Harmonogram</span>
           </NavLink>
         </li>
         <li>
