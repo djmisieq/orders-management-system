@@ -26,6 +26,11 @@ builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderCommentRepository, OrderCommentRepository>();
 builder.Services.AddScoped<IOrderHistoryRepository, OrderHistoryRepository>();
 
+// Register Production Planning repositories
+builder.Services.AddScoped<IResourceRepository, ResourceRepository>();
+builder.Services.AddScoped<IProductionTaskRepository, ProductionTaskRepository>();
+builder.Services.AddScoped<ITaskResourceAssignmentRepository, TaskResourceAssignmentRepository>();
+
 // Add CORS policy
 builder.Services.AddCors(options =>
 {
